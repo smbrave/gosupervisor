@@ -1,43 +1,40 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 )
 
-func init() {
-	procs = make(map[string]*Proc)
-
-}
-
-//todo stdlog config rpc_controll
-
-func main() {
-
-	f, err := os.OpenFile("/var/log/gosupervisor.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0755)
+func init_server() {
+	//日志输出
+	f, err := os.OpenFile(*flag_log, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644)
 	if err != nil {
 		panic(fmt.Sprintf("%s", err.Error()))
 	}
-	os.Stdin = f
-	os.Stdout = f
 	log.SetOutput(f)
 
-	proc1 := newProc()
-	proc2 := newProc()
+	//全局监控的进程
+	procs = make(map[string]*Proc)
+}
 
-	proc1.Command = "./test.sh"
-	proc1.Args = "1200"
-	proc1.Directory = "/home/vagrant/golang/src/github.com/smbrave/gosupervisor"
+var (
+	flag_server = flag.Bool("server", false, "gosupervisor run server")
+	flag_log    = flag.String("log", "/var/log/gosupervisor.log", "gosupervisor log file")
+	flag_conf   = flag.String("conf", "/etc/gosupervisor.conf", "gosupervisor config file")
+	flag_listen = flag.String("listen", "127.0.0.1:33870", "gosupgervisor listen socket")
+)
 
-	proc2.Command = "./test.sh"
-	proc2.Args = "1300"
-	proc2.Directory = "/home/vagrant/golang/src/github.com/smbrave/gosupervisor"
-
-	procs["jiangyong1"] = proc1
-	procs["jiangyong2"] = proc2
-	startProc()
-	for {
-
+func main() {
+	flag.Parse()
+	if *flag_server {
+		init_server()
+		loadProgram()
+		startServer()
+		select {}
 	}
+
+	startClient()
+
 }

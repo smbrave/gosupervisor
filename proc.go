@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -11,9 +12,10 @@ import (
 type Proc struct {
 	Name        string
 	Command     string
-	Args        string
-	Environmet  string
+	Environment string
 	Directory   string
+	StderrFile  string
+	StdoutFile  string
 	CallBackUrl string
 	StartSec    int
 
@@ -21,6 +23,7 @@ type Proc struct {
 	StartTime  time.Time
 	Status     string
 	FirstStart bool
+	Digest     string
 	ErrChan    chan error
 	ExitChan   chan struct{}
 }
@@ -28,8 +31,7 @@ type Proc struct {
 var procs map[string]*Proc
 
 func startProc() {
-	for name, proc := range procs {
-		proc.Name = name
+	for _, proc := range procs {
 		proc.start()
 	}
 }
@@ -66,13 +68,61 @@ func (proc *Proc) start() {
 	}()
 }
 
-func (proc *Proc) run() {
-	cmd := exec.Command(proc.Command, proc.Args)
-	cmd.Env = append(os.Environ(), proc.Environmet)
+func (proc *Proc) init() {
+	tmp := strings.Split(proc.Command, " ")
+	cmd := exec.Command(tmp[0], tmp[1:]...)
 	cmd.Dir = proc.Directory
+
+	//环境变量
+	if proc.Environment != "" {
+		envs := strings.Split(proc.Environment, ";")
+		cmd.Env = os.Environ()
+		for _, env := range envs {
+			cmd.Env = append(cmd.Env, env)
+		}
+	}
+
+	//标准输出
+	if proc.StdoutFile != "" {
+		path := ""
+		if strings.HasPrefix(proc.StdoutFile, "/") {
+			path = proc.StdoutFile
+		} else {
+			path = proc.Directory + "/" + proc.StdoutFile
+		}
+		stdout, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644)
+		if err != nil {
+			log.Printf("open file:%s err:%s", proc.StdoutFile, err.Error())
+		} else {
+			cmd.Stdout = stdout
+		}
+	}
+
+	//标准错误
+	if proc.StderrFile != "" {
+		path := ""
+		if strings.HasPrefix(proc.StderrFile, "/") {
+			path = proc.StderrFile
+		} else {
+			path = proc.Directory + "/" + proc.StderrFile
+		}
+		stderr, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644)
+		if err != nil {
+			log.Printf("open file:%s err:%s", proc.StderrFile, err.Error())
+		} else {
+			cmd.Stderr = stderr
+		}
+	}
+
 	proc.Cmd = cmd
+}
+
+func (proc *Proc) run() {
+	proc.init()
 	proc.StartTime = time.Now()
 	proc.Status = "starting"
+
+	cmd := proc.Cmd
 	err := cmd.Start()
 	if err != nil {
 		log.Printf("start proc:%s err:%s", proc.Name, err.Error())
@@ -87,6 +137,7 @@ func (proc *Proc) run() {
 
 	select {
 	case <-ticker.C:
+		//首次启动不回调
 		if proc.FirstStart {
 			proc.FirstStart = false
 		} else {
@@ -135,7 +186,14 @@ func (proc *Proc) stop() error {
 	if err != nil {
 		return err
 	}
+	close(proc.ExitChan)
 	return target.Signal(syscall.SIGHUP)
+}
+
+func (proc Proc) kill() error {
+	p := proc.Cmd.Process
+	close(proc.ExitChan)
+	return p.Kill()
 }
 
 func (proc *Proc) status() string {
