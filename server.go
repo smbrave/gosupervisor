@@ -69,7 +69,7 @@ func (r *GoSupervisor) List(args string, ret *string) error {
 	for name, proc := range procs {
 		status := proc.status()
 		if status == "running" {
-			result += fmt.Sprintf("proc:%-15s status:%-10s pid:%-6d start:%-25s uptime:%-20s\n",
+			result += fmt.Sprintf("name:%-20s status:%-10s pid:%-6d start:%-25s uptime:%-20s\n",
 				name, status, proc.Cmd.Process.Pid, proc.StartTime.Format("2006-01-02 15:04:05"), time.Since(proc.StartTime).String())
 		} else {
 			result += fmt.Sprintf("proc:%-15s status:%-10s\n",
