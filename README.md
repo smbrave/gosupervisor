@@ -1,6 +1,18 @@
 # gosupervisor
-gosupervisor是采用golang编写的一套进程管理监控工具，对进程状态异常自动恢复并回调告警
-### 1.配置config.xml
+gosupervisor是采用golang编写的一套进程管理监控工具，对进程状态异常自动恢复并回调告警，gosupervisor本身是一个高可靠服务。
+
+### 1.测试程序
+测试程序是一个死循环，循环输出一串信息。gosupervisor对这个测试程序进行监控
+```bash
+#!/bin/sh
+
+while [ true ];do
+    echo "`date +"%F %T"` $1 $PORT1 $PORT2"
+    sleep 1
+done
+```
+
+### 2.配置config.xml
 ```bash
 $cat /etc/gosupervisor.xml
 ```
@@ -15,8 +27,8 @@ $cat /etc/gosupervisor.xml
 	<program name="gosupervisor2">
 		<command>./test.sh 201</command>
 		<directory>/home/vagrant/golang/src/github.com/smbrave/gosupervisor/test</directory>
-        <callbackurl>http://wb.smbrave.cn:8081/supervisor/report</callbackurl>
-        <startsec>2</startsec>
+        <callbackurl>http://test.com/supervisor/report</callbackurl>
+        <environment>PORT1=3303;PORT2=3304</environment>
 	</program>
 </gosupervisor>
 ```
@@ -30,7 +42,7 @@ $cat /etc/gosupervisor.xml
 * callbackUrl:进程异常回调地址，用户报警（用户自行开发api报警控制），默认为空
 * startsec:程序稳定运行的时间，这个时间过后确定为启动正常，默认10s
 
-### 2.启动服务
+### 3.启动服务
 ```bash
 # cd $GOPATH/src/github.com/smbrave/gosupervisor;
 # go build
@@ -42,7 +54,7 @@ $cat /etc/gosupervisor.xml
 * listen: 服务监听端口和地址，默认127.0.0.1:33870，启动客户端时必须和这个地址相同，否者连接不上
 * server: 服务端启动，必须设置为true，默认为false
 
-### 3.启动客户端
+### 4.启动控制端
 ```bash
 # ./gosupervisor
 gosupervisor>list
@@ -62,3 +74,6 @@ restart	: restart program, eg: restart procname
 gosupervisor>
 gosupervisor>
 ```
+
+
+
