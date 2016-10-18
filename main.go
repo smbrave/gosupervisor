@@ -5,7 +5,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 )
+
+const APP = "gosupervisor"
+
+var binaryVersion string
+var buildTime string
+var svnRevision string
+
+func version() string {
+	return fmt.Sprintf("%s v%s (built:%s git:%s %s)", APP, binaryVersion, buildTime, svnRevision, runtime.Version())
+}
 
 func init_server() {
 	//日志输出
@@ -20,14 +31,19 @@ func init_server() {
 }
 
 var (
-	flag_server = flag.Bool("server", false, "gosupervisor run server")
-	flag_log    = flag.String("log", "/var/log/gosupervisor.log", "gosupervisor log file")
-	flag_conf   = flag.String("conf", "/etc/gosupervisor.conf", "gosupervisor config file")
-	flag_listen = flag.String("listen", "127.0.0.1:33870", "gosupgervisor listen socket")
+	flag_server  = flag.Bool("server", false, "gosupervisor run server")
+	flag_log     = flag.String("log", "/var/log/gosupervisor.log", "gosupervisor log file")
+	flag_conf    = flag.String("conf", "/etc/gosupervisor.xml", "gosupervisor config file")
+	flag_listen  = flag.String("listen", "127.0.0.1:33870", "gosupgervisor listen socket")
+	flag_version = flag.Bool("v", false, "print version")
 )
 
 func main() {
 	flag.Parse()
+	if *flag_version {
+		fmt.Printf("%s\n", version())
+		return
+	}
 	if *flag_server {
 		init_server()
 		loadProgram()

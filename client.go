@@ -31,7 +31,6 @@ func startClient() {
 
 		cmdline = strings.Trim(line, "\r\n\t")
 		if cmdline == "" {
-			fmt.Printf("gosupervisor>")
 			continue
 		}
 
