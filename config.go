@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 type Program struct {
@@ -16,7 +17,7 @@ type Program struct {
 	Directory   string `xml:"directory"`
 	StderrFile  string `xml:"stderrfile"`
 	StdoutFile  string `xml:"stdoutfile"`
-	CallBackUrl string `xml:"callback"`
+	CallBackUrl string `xml:"callbackurl"`
 	StartSec    int    `xml:"startsec"`
 }
 
@@ -24,9 +25,11 @@ type GoSupervisorConf struct {
 	Programs []*Program `xml:"program"`
 }
 
-var gosupervisorconf GoSupervisorConf
+var gosupervisorconf *GoSupervisorConf
+var hostname string
 
 func loadProgram() {
+	hostname, _ = os.Hostname()
 	conf_file := *flag_conf
 	data, err := ioutil.ReadFile(conf_file)
 
@@ -34,8 +37,8 @@ func loadProgram() {
 		log.Printf("load conf[%s] err:%s", conf_file, err.Error())
 		return
 	}
-
-	err = xml.Unmarshal(data, &gosupervisorconf)
+	conf := new(GoSupervisorConf)
+	err = xml.Unmarshal(data, conf)
 	if err != nil {
 		log.Printf("parse conf[%s] err:%s", conf_file, err.Error())
 		return
@@ -46,15 +49,15 @@ func loadProgram() {
 		del[proc.Name] = true
 	}
 
-	for _, program := range gosupervisorconf.Programs {
+	for _, program := range conf.Programs {
 		if program.Command == "" {
 			continue
 		}
-
 		proc, ok := procs[program.Name]
 		if !ok {
 			proc = newProc()
 		}
+		del[program.Name] = false
 
 		//验证配置是否更改
 		data, _ := json.Marshal(&program)
@@ -65,21 +68,21 @@ func loadProgram() {
 
 		proc.Digest = digest
 		setProc(proc, program)
-		delete(del, proc.Name)
 		proc.start()
 		procs[proc.Name] = proc
 		log.Printf("load: %+v", program)
 	}
 
 	//停止删除配置的程序
-	for name, _ := range del {
+	for name, d := range del {
 		proc, ok := procs[name]
-		if !ok {
+		if !ok || !d {
 			continue
 		}
 		proc.stop()
 		delete(procs, name)
 	}
+	gosupervisorconf = conf
 }
 
 //初始化程序
@@ -96,6 +99,7 @@ func setProc(proc *Proc, program *Program) {
 	if proc.StartSec == 0 {
 		proc.StartSec = 10
 	}
+
 }
 
 //摘要

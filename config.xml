@@ -1,20 +1,28 @@
 <gosupervisor>
-	
+
+
 	<program name="gosupervisor1">
-		<command>./test.sh 100</command>
+		<command>./test.sh 200</command>
 		<directory>/home/vagrant/golang/src/github.com/smbrave/gosupervisor/test</directory>
+        <callbackurl>http://wb.smbrave.cn:8081/supervisor/report</callbackurl>
+        <startsec>2</startsec>
 	</program>
 
 	<program name="gosupervisor2">
-		<command>./test.sh 200</command>
+		<command>./test.sh 201</command>
 		<directory>/home/vagrant/golang/src/github.com/smbrave/gosupervisor/test</directory>
-		<stderrfile>gosupervisor2_stderr.log</stderrfile>
-		<stdoutfile>gosupervisor2_stdout.log</stdoutfile>
 	</program>
-	
 
 	<program name="gosupervisor3">
-		<command>./test.sh</command>
+		<command>./test.sh 202</command>
 		<directory>/home/vagrant/golang/src/github.com/smbrave/gosupervisor/test</directory>
 	</program>
+
+	<program name="gosupervisor4">
+		<command>./test.sh 203</command>
+		<directory>/home/vagrant/golang/src/github.com/smbrave/gosupervisor/test</directory>
+	</program>
+
+
+
 </gosupervisor>

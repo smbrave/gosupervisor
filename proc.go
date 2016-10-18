@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -21,6 +25,7 @@ type Proc struct {
 
 	Cmd        *exec.Cmd
 	StartTime  time.Time
+	OpTime     time.Time
 	Status     string
 	FirstStart bool
 	Digest     string
@@ -50,7 +55,7 @@ func (proc *Proc) start() {
 		log.Printf("proc name:%s already start ...", proc.Name)
 		return
 	}
-
+	proc.OpTime = time.Now()
 	proc.ExitChan = make(chan struct{})
 	go func() {
 		for {
@@ -141,7 +146,7 @@ func (proc *Proc) run() {
 		if proc.FirstStart {
 			proc.FirstStart = false
 		} else {
-			proc.callback(true)
+			proc.callback("start")
 		}
 	case err = <-proc.ErrChan:
 		log.Printf("start proc:%s less than %ds", proc.Name, proc.StartSec)
@@ -155,15 +160,45 @@ func (proc *Proc) run() {
 		log.Printf("proc:%s exit, start at:%s, run span:%v, err:%v",
 			proc.Name, proc.StartTime.Format("2006-01-02 15:04:05"), time.Since(proc.StartTime).String(), err)
 	}
-	proc.callback(false)
+	proc.callback("stop")
 }
 
-//todo
-func (proc *Proc) callback(start bool) {
+//回调告警
+func (proc *Proc) callback(status string) {
 	if proc.CallBackUrl == "" {
 		return
 	}
-	log.Printf("proc:%s callback: %s %v", proc.Name, proc.CallBackUrl, start)
+
+	//人工操作的不回调
+	span := time.Since(proc.OpTime).Seconds()
+	if span < float64(proc.StartSec+10) {
+		return
+	}
+
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+	callbackData := make(map[string]interface{})
+	callbackData["starttime"] = proc.StartTime.Format("2006-01-02 15:04:05")
+	callbackData["sendtime"] = time.Now().Format("2006-01-02 15:04:05")
+	callbackData["procname"] = proc.Name
+	callbackData["command"] = proc.Command
+	callbackData["status"] = status
+	callbackData["hostname"] = hostname
+	callbackBody, _ := json.Marshal(callbackData)
+	resp, err := client.Post(proc.CallBackUrl, "application/json;charset=utf-8", bytes.NewBuffer(callbackBody))
+	if err != nil {
+		log.Printf("proc:%s callback url:%s err:%s", proc.Name, proc.CallBackUrl, err.Error())
+		return
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("proc:%s callback url:%s err:%s", proc.Name, proc.CallBackUrl, err.Error())
+		return
+	}
+
+	log.Printf("proc:%s callback: %s %s", proc.Name, proc.CallBackUrl, string(data))
 }
 
 func (proc *Proc) stop() error {
@@ -172,27 +207,46 @@ func (proc *Proc) stop() error {
 		return nil
 	}
 
-	pgid, err := syscall.Getpgid(p.Pid)
+	target, err := os.FindProcess(p.Pid)
 	if err != nil {
 		return err
 	}
-
-	pid := p.Pid
-	if pgid == p.Pid {
-		pid = -1 * pid
+	if proc.ExitChan != nil {
+		close(proc.ExitChan)
 	}
-
-	target, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	close(proc.ExitChan)
+	proc.OpTime = time.Now()
 	return target.Signal(syscall.SIGHUP)
 }
 
-func (proc Proc) kill() error {
+func (proc *Proc) restart() error {
+	defer func() { proc.OpTime = time.Now() }()
+	if proc.ExitChan == nil {
+		proc.start()
+		return nil
+	}
+
 	p := proc.Cmd.Process
-	close(proc.ExitChan)
+	if p == nil {
+		proc.start()
+		return nil
+	}
+
+	target, err := os.FindProcess(p.Pid)
+	if err != nil {
+		proc.start()
+		return err
+	}
+
+	return target.Signal(syscall.SIGHUP)
+
+}
+
+func (proc *Proc) kill() error {
+	defer func() { proc.OpTime = time.Now() }()
+	p := proc.Cmd.Process
+	if proc.ExitChan != nil {
+		close(proc.ExitChan)
+	}
 	return p.Kill()
 }
 
