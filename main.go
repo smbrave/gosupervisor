@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 )
 
 const APP = "gosupervisor"
@@ -30,6 +32,29 @@ func init_server() {
 	procs = make(map[string]*Proc)
 }
 
+func init_singal() {
+	signalChan := make(chan os.Signal, 1)
+	signalIgnoreChan := make(chan os.Signal, 1)
+	go func() {
+		for {
+			select {
+			case <-signalChan:
+				for _, proc := range procs {
+					proc.stop()
+					log.Printf("name:%s stoped!", proc.Name)
+				}
+				log.Printf("all proc stop!")
+				os.Exit(0)
+				return
+			case <-signalIgnoreChan:
+				continue
+			}
+		}
+	}()
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signalIgnoreChan, syscall.SIGPIPE)
+}
+
 var (
 	flag_server  = flag.Bool("server", false, "gosupervisor run server")
 	flag_log     = flag.String("log", "/var/log/gosupervisor.log", "gosupervisor log file")
@@ -44,7 +69,9 @@ func main() {
 		fmt.Printf("%s\n", version())
 		return
 	}
+
 	if *flag_server {
+		init_singal()
 		init_server()
 		loadProgram()
 		startServer()

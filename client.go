@@ -23,7 +23,7 @@ func startClient() {
 	cmdline := ""
 
 	for {
-		fmt.Printf("gosupervisor>")
+		fmt.Printf(Magenta("gosupervisor>") + FgMagenta)
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
@@ -36,16 +36,16 @@ func startClient() {
 
 		err, ret := run(client, cmdline)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(Red(err.Error()))
 			if err.Error() == "connection is shut down" {
 				client, err = rpc.Dial("tcp", *flag_listen)
 				if err != nil {
-					fmt.Printf("%s\n", err.Error())
+					fmt.Printf(Red(err.Error()))
 					return
 				}
 			}
 		} else {
-			fmt.Println(ret)
+			fmt.Println(Green(ret))
 		}
 	}
 }

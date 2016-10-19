@@ -215,7 +215,7 @@ func (proc *Proc) stop() error {
 		close(proc.ExitChan)
 	}
 	proc.OpTime = time.Now()
-	return target.Signal(syscall.SIGHUP)
+	return target.Signal(syscall.SIGTERM)
 }
 
 func (proc *Proc) restart() error {

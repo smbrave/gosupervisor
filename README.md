@@ -39,10 +39,10 @@ $cat /etc/gosupervisor.xml
 * environment:程序运行环境变量，如K1=V1;K2=V2
 * stderrfile:标准错误输出文件，默认/dev/null
 * stdoutfile:标准输出文件，默认/dev/null
-* callbackUrl:进程异常回调地址，用户报警（用户自行开发api报警控制），默认为空
+* callbackurl:进程异常回调地址，用户报警（用户自行开发api报警控制），默认为空
 * startsec:程序稳定运行的时间，这个时间过后确定为启动正常，默认10s
 
-### 3.启动服务
+### 3.启动服务端
 ```bash
 # cd $GOPATH/src/github.com/smbrave/gosupervisor;
 # go build
