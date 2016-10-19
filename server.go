@@ -93,6 +93,6 @@ func startServer() {
 		if err != nil {
 			continue
 		}
-		rpc.ServeConn(client)
+		go rpc.ServeConn(client)
 	}
 }
