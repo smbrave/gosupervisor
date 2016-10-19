@@ -237,7 +237,7 @@ func (proc *Proc) restart() error {
 		return err
 	}
 
-	return target.Signal(syscall.SIGHUP)
+	return target.Signal(syscall.SIGTERM)
 
 }
 
