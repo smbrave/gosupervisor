@@ -198,7 +198,8 @@ func (proc *Proc) callback(status string) {
 		return
 	}
 
-	log.Printf("proc:%s callback: %s %s", proc.Name, proc.CallBackUrl, string(data))
+	log.Printf("proc:%s status:%s callback: %s %s",
+		proc.Name, status, proc.CallBackUrl, string(data))
 }
 
 func (proc *Proc) stop() error {
