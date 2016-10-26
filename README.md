@@ -1,6 +1,5 @@
 # gosupervisor
-gosupervisor是采用golang编写的一套进程管理监控工具，对进程状态异常自动恢复并回调告警，gosupervisor本身是一个高可靠服务。
-
+gosupervisor是采用golang编写的一套进程管理监控工具，对多个进程状态监控，异常自动恢复并回调告警，支持标准输入输出重定向、环境变量设置等，提供命令行管理入口，操作直观简单。让进程管理更简单
 ### 1.测试程序
 测试程序是一个死循环，循环输出一串信息。gosupervisor对这个测试程序进行监控
 ```bash
@@ -74,6 +73,14 @@ restart	: restart program, eg: restart procname
 gosupervisor>
 gosupervisor>
 ```
+* list: 打印当前正在监控的进程列表及状态
+* reload: 重新加载配置，添加、删除进程监控之后需要执行一次reload生效
+* exit: 退出控制终端
+* start: 启动某个进程 如：start procname
+* stop: 停止某个进程 如：stop procname
+* kill: 强制停止某个进程(kill -9) 如：kill procname
+* restart: 重启某个进程 如：restart procname
+
 
 
 
