@@ -4,6 +4,8 @@ gosupervisor是采用golang编写的一套进程管理监控工具，对多个�
 测试程序是一个死循环，循环输出一串信息。gosupervisor对这个测试程序进行监控
 ```bash
 # cat ./test.sh
+```
+```bash
 #!/bin/sh
 
 while [ true ];do
