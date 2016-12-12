@@ -73,7 +73,7 @@ func (r *GoSupervisor) List(args string, ret *string) error {
 				name, status, proc.Cmd.Process.Pid, proc.StartTime.Format("2006-01-02 15:04:05"),
 				time.Since(proc.StartTime).Hours()/24)
 		} else {
-			result += fmt.Sprintf("proc:%-20s status:%-10s\n",
+			result += fmt.Sprintf("name:%-20s status:%-10s\n",
 				name, status)
 		}
 	}
