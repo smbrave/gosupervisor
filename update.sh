@@ -1,6 +1,6 @@
 #!/bin/sh
 
-LAST_VERSION=1.0.1
+LAST_VERSION=1.0.2
 
 if [ $# -ne 1 ];then
     echo "usage: $0 commit message"
