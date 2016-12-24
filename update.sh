@@ -1,9 +1,10 @@
 #!/bin/sh
 
-LAST_VERSION=2.1.37
+LAST_VERSION=2.1.38
 
-if [ $# -ne 2 ];then
+if [ $# -ne 1 ];then
     echo "usage: $0 commit message"
+    exit 0
 fi
 MESSAGE=$1
 SUB_VERSION=`echo $LAST_VERSION|awk -F"." '{print $3}'`
