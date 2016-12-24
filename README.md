@@ -84,6 +84,8 @@ gosupervisor>
 * kill: 强制停止某个进程(kill -9) 如：kill procname
 * restart: 重启某个进程 如：restart procname
 
+@2016-12-12
+
 
 
 
